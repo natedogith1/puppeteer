@@ -17,6 +17,17 @@ public class Server implements IServer{
 		this.port = port;
 	}
 	
+	public void start() {
+		master.register(name, this);
+	}
+	public void stop() {
+		// NO-OP
+	}
+	public String getName() {return name;}
+	public String getHost() {return host;}
+	public int getPort() {return port;}
+	public int getId() {return id;}
+	
 	@Override
 	public void idAquired(int id, String name) {
 		this.id = id;
@@ -28,5 +39,9 @@ public class Server implements IServer{
 		} catch (IOException e) {
 			return new DeadConnection(master);
 		}
+	}
+	@Override
+	public void stop(String name, int id) {
+		// NO-OP
 	}
 }

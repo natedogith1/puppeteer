@@ -27,20 +27,20 @@ public class Main {
 				port = Integer.valueOf(args[0]);
 			} catch (NumberFormatException e) {
 				System.out.println("invalid port number");
-				System.exit(1);
 				printUsage();
+				System.exit(1);
 				return;
 			}
 		}
 		
+		server = new Server(port);
 		try {
-			server = new Server(port);
+			server.start();
 		} catch (IOException e) {
-			e.printStackTrace();
+			System.out.println("Could not start server: " + e.getMessage());
 			System.exit(2);
 			return;
 		}
-		server.start();
 		Thread thread = new Thread("Console"){
 			@Override
 			public void run() {
@@ -97,7 +97,7 @@ public class Main {
 					maxId>>=4;
 				}
 				for ( HostInfo info : list ) {
-					System.out.printf("0x%0"+len+"x : %s", info.getId(), info.getName());
+					System.out.printf("0x%0"+len+"x : %s\n", info.getId(), info.getName());
 				}
 			} else if ( command.equals("getport") ) {
 				System.out.println(server.getPort());

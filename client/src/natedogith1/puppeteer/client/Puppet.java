@@ -9,7 +9,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -18,6 +21,10 @@ import natedogith1.puppeteer.server.Message;
 
 public class Puppet {
 	
+	public static final int DEFAULT_PORT = 11717;
+	
+	private String server;
+	private int port;
 	private Socket socket;
 	private BlockingQueue<byte[]> toSend = new LinkedBlockingQueue<byte[]>();
 	private int curNonce = 0;
@@ -27,9 +34,13 @@ public class Puppet {
 	private Map<ServerId, IServer> servers = new HashMap<ServerId, IServer>();
 	private Map<Integer, IConnection> connections = new HashMap<Integer, IConnection>();
 	private Map<Integer, IListener> listeners = new HashMap<Integer, IListener>();
+	private List<Runnable> closeListeners = new LinkedList<Runnable>();
 	
-	public Puppet(String server, int port) throws UnknownHostException, IOException {
-		socket = new Socket(server, port);
+	public Puppet(String server, int port){
+		this.server = server;
+		if ( port < 0 )
+			port = DEFAULT_PORT;
+		this.port = port;
 		readThread = new Thread("Read") {
 			@Override
 			public void run() {
@@ -44,7 +55,8 @@ public class Puppet {
 		};
 	}
 	
-	public void start() {
+	public void start() throws UnknownHostException, IOException {
+		socket = new Socket(server, port);
 		readThread.start();
 		writeThread.start();
 	}
@@ -72,6 +84,14 @@ public class Puppet {
 	
 	private String readString(DataInputStream in) throws IOException {
 		return new String(readData(in), "UTF-8");
+	}
+	
+	public boolean registerCloseListener(Runnable listener) {
+		return closeListeners.add(listener);
+	}
+			
+	public boolean unregisterCloseListener(Runnable listener) {
+		return closeListeners.remove(listener);
 	}
 	
 	public void connect(String name, IConnection connection) {
@@ -284,6 +304,8 @@ public class Puppet {
 		if ( closed )
 			return;
 		closed = true;
+		for ( Runnable runnable : closeListeners )
+			runnable.run();
 		try {
 			DataOutputStream out = getSuitableOutput();
 			out.writeByte(Message.END_SESSION.ordinal());
@@ -291,6 +313,10 @@ public class Puppet {
 		} catch (IOException e) {
 			assert false; // this shouldn't ever happen
 		}
+		for ( Map.Entry<ServerId, IServer> e : servers.entrySet() )
+			e.getValue().stop(e.getKey().getName(),e.getKey().getId());
+		for ( Map.Entry<Integer, IConnection> e : connections.entrySet() )
+			e.getValue().close(e.getKey());
 		try {
 			socket.close();
 		} catch (IOException e) {
@@ -326,5 +352,9 @@ public class Puppet {
 			servers.put(new ServerId(name, id), server);
 			server.idAquired(id, name);
 		}
+	}
+	
+	public Map<ServerId,IServer> getServers() {
+		return Collections.unmodifiableMap(servers);
 	}
 }

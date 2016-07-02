@@ -12,11 +12,12 @@ public class Server {
 	private HostDatabase hostDatabase = new HostDatabase();
 	private ServerSocket serverSocket;
 	private Thread thread;
+	private int port;
 	
-	public Server(int port) throws IOException {
+	public Server(int port){
 		if ( port < 0 )
 			port = DEFAULT_PORT;
-		serverSocket = new ServerSocket(port);
+		this.port = port;
 		thread = new Thread("Server Thread") {
 			@Override
 			public void run() {
@@ -25,7 +26,8 @@ public class Server {
 		};
 	}
 	
-	public void start() {
+	public void start() throws IOException {
+		serverSocket = new ServerSocket(port);
 		thread.start();
 	}
 	
