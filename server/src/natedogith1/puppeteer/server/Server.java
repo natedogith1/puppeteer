@@ -1,4 +1,4 @@
-package natedogith1.puppeteer;
+package natedogith1.puppeteer.server;
 
 import java.io.IOException;
 import java.net.ServerSocket;

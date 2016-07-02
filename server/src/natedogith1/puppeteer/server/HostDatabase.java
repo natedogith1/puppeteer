@@ -1,4 +1,4 @@
-package natedogith1.puppeteer;
+package natedogith1.puppeteer.server;
 
 import java.util.Iterator;
 import java.util.LinkedList;

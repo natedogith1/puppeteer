@@ -1,4 +1,4 @@
-package natedogith1.puppeteer;
+package natedogith1.puppeteer.server;
 
 public class HostInfo {
 	private Client client;

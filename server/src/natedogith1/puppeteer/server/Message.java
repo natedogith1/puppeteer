@@ -1,4 +1,4 @@
-package natedogith1.puppeteer;
+package natedogith1.puppeteer.server;
 
 public enum Message {
 	RESPONSE(Direction.CLIENT),
