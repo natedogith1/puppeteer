@@ -1,28 +1,18 @@
-package natedogith1.puppeteer.server;
+package natedogith1.puppeteer.client;
 
-public class HostInfo {
-	private Client client;
+public class ServerId {
 	private String name;
 	private int id;
-	
-	public HostInfo(Client client, String name) {
-		this.client = client;
+	public ServerId(String name, int id) {
 		this.name = name;
-	}
-	
-	public Client getClient() {
-		return client;
+		this.id = id;
 	}
 	public String getName() {
 		return name;
 	}
-	public void setId(int id) {
-		this.id = id;
-	}
 	public int getId() {
 		return id;
 	}
-
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -31,7 +21,6 @@ public class HostInfo {
 		result = prime * result + ((name == null) ? 0 : name.hashCode());
 		return result;
 	}
-
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
@@ -40,7 +29,7 @@ public class HostInfo {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		HostInfo other = (HostInfo) obj;
+		ServerId other = (ServerId) obj;
 		if (id != other.id)
 			return false;
 		if (name == null) {

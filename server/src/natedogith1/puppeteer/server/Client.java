@@ -21,9 +21,9 @@ public class Client {
 	private BlockingQueue<byte[]> toSend = new LinkedBlockingQueue<byte[]>();
 	private Map<Integer,Connection> connections = new HashMap<Integer,Connection>();
 	private int curId = 1;
-	boolean closed = false;
-	Thread readThread;
-	Thread writeThread;
+	private boolean closed = false;
+	private Thread readThread;
+	private Thread writeThread;
 	
 	public Client(Server server, Socket socket) {
 		this.server = server;
@@ -65,10 +65,13 @@ public class Client {
 		});
 	}
 	
-	private void writeString(DataOutputStream out, String str) throws IOException {
-		byte[] buf = str.getBytes("UTF-8");
+	private void writeData(DataOutputStream out, byte[] buf) throws IOException {
 		out.writeInt(buf.length);
 		out.write(buf);
+	}
+	
+	private void writeString(DataOutputStream out, String str) throws IOException {
+		writeData(out, str.getBytes("UTF-8"));
 	}
 	
 	private byte[] readData(DataInputStream in) throws IOException {
@@ -100,6 +103,7 @@ public class Client {
 			out.writeByte((byte)Message.SEND.ordinal());
 			out.writeInt(buf.length);
 			out.write(buf);
+			out.close();
 		} catch (IOException e) {
 			assert false;// this shouldn't ever happen
 		}
@@ -148,19 +152,20 @@ public class Client {
 			DataInputStream in = new DataInputStream(socket.getInputStream());
 			while ( !isClosed() ) {
 				DataOutputStream out = getSuitableOutput();
-				int packetID = in.readByte();
+				int packetId = in.readByte();
 				int nonce = in.readInt();
-				out.writeByte(Message.RESPONSE.ordinal());
-				out.writeInt(nonce);
 				String name;
 				int id;
 				int conId;
 				byte[] data;
 				Connection con;
-				switch (Message.values()[packetID]) {
+				switch (Message.values()[packetId]) {
 				case REGISTER:
 					name = readString(in);
 					id = server.getHostDatabase().registerHost(this, name);
+					out.writeByte(Message.RESPONSE.ordinal());
+					out.writeInt(nonce);
+					out.writeByte(packetId);
 					out.writeInt(id);
 					break;
 				case UNREGISTER:
@@ -172,15 +177,23 @@ public class Client {
 					name = readString(in);
 					id = in.readInt();
 					conId = handleConnect(server.getHostDatabase().getHostInfo(name, id));
+					out.writeByte(Message.RESPONSE.ordinal());
+					out.writeInt(nonce);
+					out.writeByte(packetId);
 					out.writeInt(conId);
 					break;
 				case CONNECT_NAME:
 					name = readString(in);
 					conId = handleConnect(server.getHostDatabase().getHostInfo(name));
+					out.writeByte(Message.RESPONSE.ordinal());
+					out.writeInt(nonce);
+					out.writeByte(packetId);
 					out.writeInt(conId);
 					break;
 				case LOOKUP:
+					out.writeByte(Message.RESPONSE.ordinal());
 					out.writeInt(nonce);
+					out.writeByte(packetId);
 					doLookup(out, readString(in));
 					break;
 				case SEND:
@@ -195,9 +208,10 @@ public class Client {
 					con.other.closeConnection(con.otherId);
 					break;
 				case END_SESSION:
-					close();;
+					close();
 					break;
 				default:
+					close();
 					break;
 				}
 				out.close();
@@ -205,6 +219,9 @@ public class Client {
 		} catch (EOFException e) {
 			// handled in finally
 		} catch (IOException e) {
+			// handled in finally
+		} catch (ArrayIndexOutOfBoundsException e) {
+			// caused by an invalid packet id
 			// handled in finally
 		} finally {
 			close();
@@ -226,7 +243,7 @@ public class Client {
 		}
 	}
 	
-	private void close() {
+	public void close() {
 		if ( closed )
 			return;
 		closed = true;
