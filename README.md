@@ -6,7 +6,7 @@ name and query are a length followed by an equal number of bytes that form a UTF
 cid and sid are a 4 byte number
 
 id|direction|name       | sent data |returned data| description
---|------|--------------|-----------|-------------|----
+---|------|--------------|-----------|-------------|----
 0 | S->C | RESPONSE     | nonce, varies  | void   | packet type that holds returned data
 1 | C->S | REGISTER     | name           | sid    | offer a service under the given name, returns a value that combines with name to uniquely identify this server
 2 | C->S | UNREGISTER   | name, sid      | void   | stop offering the service with the given name and sid
