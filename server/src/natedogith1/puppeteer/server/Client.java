@@ -11,15 +11,14 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class Client {
 
 	private Server server;
 	private Socket socket;
-	private Queue<byte[]> toSend = new ConcurrentLinkedQueue<byte[]>();
-	private Object sendLock = new Object();
+	private BlockingQueue<byte[]> toSend = new LinkedBlockingQueue<byte[]>();
 	private Map<Integer,Connection> connections = new HashMap<Integer,Connection>();
 	private int curId = 1;
 	boolean closed = false;
@@ -216,19 +215,11 @@ public class Client {
 		try {
 			while ( !isClosed() ) {
 				OutputStream out = socket.getOutputStream();
-				synchronized(sendLock) {
-					try {
-						while(toSend.isEmpty())
-							sendLock.wait();
-					} catch (InterruptedException e) {
-						return;
-					}
-				}
-				while(!toSend.isEmpty()) {
-					out.write(toSend.poll());
-				}
+				out.write(toSend.take());
 			}
 		} catch (IOException e) {
+			
+		} catch (InterruptedException e) {
 			
 		} finally {
 			close();
