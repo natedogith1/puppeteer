@@ -7,15 +7,17 @@ import java.net.Socket;
 
 public class Server {
 	
-	public static final int DEAFULT_PORT = 11717; 
+	public static final int DEFAULT_PORT = 11717; 
 	
 	private HostDatabase hostDatabase = new HostDatabase();
 	private ServerSocket serverSocket;
 	private Thread thread;
 	
 	public Server(int port) throws IOException {
+		if ( port < 0 )
+			port = DEFAULT_PORT;
 		serverSocket = new ServerSocket(port);
-		thread = new Thread() {
+		thread = new Thread("Server Thread") {
 			@Override
 			public void run() {
 				handleConnections();

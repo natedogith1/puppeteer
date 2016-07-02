@@ -29,13 +29,14 @@ public class Client {
 	public Client(Server server, Socket socket) {
 		this.server = server;
 		this.socket = socket;
-		readThread = new Thread() {
+		String threadSuffix = " for " + socket.getInetAddress().toString() + ":" + socket.getPort();
+		readThread = new Thread("Read" + threadSuffix) {
 			@Override
 			public void run() {
 				handleRead();
 			}
 		};
-		writeThread = new Thread() {
+		writeThread = new Thread("Write" + threadSuffix) {
 			@Override
 			public void run() {
 				handleWrite();

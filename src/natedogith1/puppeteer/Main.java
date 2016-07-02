@@ -7,6 +7,8 @@ import java.util.Scanner;
 public class Main {
 	
 	private static Server server;
+	public static Object runLock = new Object();
+	public static boolean run = true;
 	
 	private static void printUsage() {
 		System.out.println("program [port]");
@@ -39,11 +41,30 @@ public class Main {
 			return;
 		}
 		server.start();
-		handleConsole();
+		Thread thread = new Thread("Console"){
+			@Override
+			public void run() {
+				handleConsole();
+			}
+		};
+		thread.setDaemon(true);
+		thread.start();
+		synchronized(runLock) {
+			try {
+			while ( run )
+				runLock.wait();
+			} catch (InterruptedException e) {
+				
+			}
+		}
 	}
 	
 	private static void printHelp() {
-		
+		System.out.println("help        \t print this help message");
+		System.out.println("exit        \t stop the server");
+		System.out.println("hardExit    \t exit the VM, shutting down everything");
+		System.out.println("listServices\t list all hosted services");
+		System.out.println("getPort     \t print the port the server is running on");
 	}
 	
 	private static void handleConsole() {
@@ -59,6 +80,10 @@ public class Main {
 				printHelp();
 			} else if ( command.equals("exit") ) {
 				server.stop();
+				synchronized (runLock) {
+					run = false;
+					runLock.notifyAll();
+				}
 			} else if ( command.equals("hardexit") ) {
 				System.exit(0);
 			} else if ( command.equals("listservices") ) {
@@ -78,6 +103,7 @@ public class Main {
 				System.out.println(server.getPort());
 			} else {
 				System.out.println("Unknown command '" + command + "'");
+				System.out.println("type 'help' for a list of commands");
 			}
 			scan.close();
 		}
