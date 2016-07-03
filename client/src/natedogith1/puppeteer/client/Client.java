@@ -29,7 +29,7 @@ public class Client {
 		master.registerCloseListener(new Runnable() {
 			@Override
 			public void run() {
-				stop();
+				close();
 			}
 		});
 		receiveThread = new Thread("port " + localPort + " to " + name + (hasId?" : " + id:"")){
@@ -41,11 +41,12 @@ public class Client {
 	}
 	
 	public void start() {
-		receiveThread.run();
+		receiveThread.start();
 	}
-	public void stop() {
+	public void close() {
 		try {
-			serverSocket.close();
+			if ( serverSocket != null )
+				serverSocket.close();
 		} catch (IOException e) {
 			
 		}

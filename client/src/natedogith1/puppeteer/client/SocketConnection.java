@@ -1,5 +1,6 @@
 package natedogith1.puppeteer.client;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Arrays;
@@ -61,6 +62,8 @@ public class SocketConnection implements IConnection {
 			while(!socket.isClosed()) {
 				int read;
 				read = socket.getInputStream().read(buf);
+				if ( read < 0 )
+					throw new EOFException();
 				master.sendData(id, Arrays.copyOf(buf, read));
 			}
 		} catch (IOException e) {

@@ -1,6 +1,7 @@
 # puppeteer
 
 packets are sent in the order of (id, nonce, sent data)  
+packets sent C0>S have nonce, S->C packets don't
 RESPONSE packets contain the nonce of the triggering packet and the associated returned data  
 name and query are a length followed by an equal number of bytes that form a UTF-8 string  
 cid and sid are a 4 byte number

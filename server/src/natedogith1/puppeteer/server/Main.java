@@ -96,6 +96,8 @@ public class Main {
 					len++;
 					maxId>>=4;
 				}
+				if ( len <= 0 )
+					len = 1;
 				for ( HostInfo info : list ) {
 					System.out.printf("0x%0"+len+"x : %s\n", info.getId(), info.getName());
 				}

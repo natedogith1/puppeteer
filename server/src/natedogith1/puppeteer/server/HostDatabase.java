@@ -21,8 +21,10 @@ public class HostDatabase {
 		lock.readLock().lock();
 		for ( HostInfo info : hosts ) {
 			if ( name.equals(info.getName()) ) {
-				if ( ret != null )
+				if ( ret != null ) {
+					lock.readLock().unlock();
 					return null;
+				}
 				ret = info;
 			}
 		}
@@ -33,7 +35,10 @@ public class HostDatabase {
 	public HostInfo getHostInfo(String name, int id) {
 		lock.readLock().lock();
 		for ( HostInfo info : hosts ) {
-			if ( name.equals(info.getName()) && id == info.getId());   
+			if ( name.equals(info.getName()) && id == info.getId()) {
+				lock.readLock().unlock();
+				return info;
+			}
 		}
 		lock.readLock().unlock();
 		return null;
@@ -46,7 +51,7 @@ public class HostDatabase {
 		while ( getHostInfo(name, id) != null ) {
 			id++;
 		}
-		info.setId(client.hashCode());
+		info.setId(id);
 		hosts.add(info);
 		lock.writeLock().unlock();
 		return id;
@@ -54,17 +59,27 @@ public class HostDatabase {
 	
 	public void unregisterHost(Client client, String name, int id) {
 		HostInfo info = getHostInfo(name, id);
-		if ( info.getClient() == client ) {
+		if ( info != null && info.getClient() == client ) {
 			lock.writeLock().lock();
 			hosts.remove(info);
 			lock.writeLock().unlock();
 		}
 	}
 	
+	private static final String regexSpecial = "\\[.^$?*+{|(";
+	
+	private String escapeRegex(String str) {
+		for ( String reg : regexSpecial.split("") )
+			if ( ! ("").equals(reg) )
+				str = str.replace(reg, "\\" + reg);
+		return str;
+	}
+	
 	public List<HostInfo> search(String query) {
 		List<HostInfo> results = new LinkedList<HostInfo>();
 		lock.readLock().lock();
-		Pattern search = Pattern.compile(Pattern.quote(query).replace("\\.", ".").replace("\\*", ".*"));
+		Pattern search = Pattern.compile("^"+escapeRegex(query).replace("\\.", ".").replace("\\*", ".*")+"$",
+				Pattern.CASE_INSENSITIVE|Pattern.DOTALL|Pattern.MULTILINE);
 		for ( HostInfo info : hosts ) {
 			Matcher mat = search.matcher(info.getName());
 			if ( mat.matches() )

@@ -20,8 +20,8 @@ public class Server implements IServer{
 	public void start() {
 		master.register(name, this);
 	}
-	public void stop() {
-		// NO-OP
+	public void close() {
+		master.unregister(name, this, id);
 	}
 	public String getName() {return name;}
 	public String getHost() {return host;}
@@ -41,7 +41,7 @@ public class Server implements IServer{
 		}
 	}
 	@Override
-	public void stop(String name, int id) {
+	public void close(String name, int id) {
 		// NO-OP
 	}
 }

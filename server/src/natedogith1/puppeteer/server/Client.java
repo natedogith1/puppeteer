@@ -8,10 +8,10 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class Client {
@@ -19,7 +19,7 @@ public class Client {
 	private Server server;
 	private Socket socket;
 	private BlockingQueue<byte[]> toSend = new LinkedBlockingQueue<byte[]>();
-	private Map<Integer,Connection> connections = new HashMap<Integer,Connection>();
+	private Map<Integer,Connection> connections = new ConcurrentHashMap<Integer,Connection>();
 	private int curId = 1;
 	private boolean closed = false;
 	private Thread readThread;
@@ -50,7 +50,7 @@ public class Client {
 	
 	public boolean isClosed() {
 		return closed || readThread.getState() == Thread.State.TERMINATED || 
-				writeThread.getState() == Thread.State.TERMINATED;
+				writeThread.getState() == Thread.State.TERMINATED || socket.isClosed();
 	}
 	
 	private DataOutputStream getSuitableOutput() {
@@ -101,6 +101,7 @@ public class Client {
 		try {
 			DataOutputStream out = getSuitableOutput();
 			out.writeByte((byte)Message.SEND.ordinal());
+			out.writeInt(conId);
 			out.writeInt(buf.length);
 			out.write(buf);
 			out.close();
@@ -139,7 +140,6 @@ public class Client {
 	
 	private void doLookup(DataOutputStream out, String query) throws IOException {
 		List<HostInfo> infos = server.getHostDatabase().search(query);
-		out.write(Message.LOOKUP.ordinal());
 		out.writeInt(infos.size());
 		for ( HostInfo info : infos ) {
 			writeString(out, info.getName());
@@ -200,12 +200,14 @@ public class Client {
 					conId = in.readInt();
 					data = readData(in);
 					con = connections.get(conId);
-					con.other.putData(con.otherId, data);
+					if ( con != null )
+						con.other.putData(con.otherId, data);
 					break;
 				case CLOSE:
 					conId = in.readInt();
 					con = connections.remove(conId);
-					con.other.closeConnection(con.otherId);
+					if ( con != null )
+						con.other.closeConnection(con.otherId);
 					break;
 				case END_SESSION:
 					close();
@@ -255,8 +257,10 @@ public class Client {
 		} catch (IOException e) {
 			assert false; // this shouldn't ever happen
 		}
-		for( Connection e : connections.values() ) {
-			e.other.closeConnection(e.otherId);
+		synchronized ( connections ) {
+			for( Connection e : connections.values() ) {
+				e.other.closeConnection(e.otherId);
+			}
 		}
 		try {
 			socket.close();
